@@ -5,7 +5,6 @@
 
 Ornstein-Uhlenbeck brownian motion for TouchDesigner. A Script CHOP that generates smooth, mean-reverting procedural noise — perfect for organic camera drift, floating objects, generative motion, and anything that needs to feel alive.
 
-<!-- Add a screenshot or GIF here -->
 <!-- ![Preview](assets/preview.gif) -->
 
 ## What It Does
@@ -19,64 +18,59 @@ Unlike random noise, Ornstein-Uhlenbeck motion always pulls back toward center �
 - **Deterministic** — set a seed for repeatable motion
 - **Headless-tested** — 20 automated tests validate the math at extreme parameters
 
-## Parameters
-
-### Motion
-
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| **Range Min / Max** | `-1` / `1` | Output bounds. The normalized [-1, 1] motion gets mapped to this range. Default [-1, 1] means output matches the raw sim. Set to [0, 100] and your channels wander between 0 and 100. |
-| **Speed** | `1.0` | How fast time passes for the simulation. Speed=1 is real-time. Speed=5 means the OU process evolves 5x faster — more ground covered per frame. Transitions are smoothed so dragging the slider doesn't cause jumps. |
-| **Amplitude** | `1.0` | Output multiplier (0 = no motion). |
-| **Reversion** | `2.0` | How strongly the motion pulls back toward the center point (theta in the OU process). High values = tight orbit around center, snaps back quickly. Low values = lazy wandering, barely cares about center. Zero = pure Brownian motion, no pull at all. |
-| **Roughness** | `0.5` | Controls the smoothing filter on the output. 0 = very smooth, flowing motion (spring with ~2s settling). 0.5 = moderate. 1 = raw unfiltered OU, no spring at all. Doesn't affect speed, just the texture of the motion. |
-
-### Range
-
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| **Per-Axis Range** | Off | Toggle to set different min/max per axis. |
-| **Range Min / Max** | `-1` / `1` | Uniform output bounds (shown when Per-Axis Range is off). |
-| **Range Min/Max X** | `-1` / `1` | X axis bounds (shown when Per-Axis Range is on). |
-| **Range Min/Max Y** | `-1` / `1` | Y axis bounds (shown when Per-Axis Range is on). |
-| **Range Min/Max Z** | `-1` / `1` | Z axis bounds (shown when Per-Axis Range is on). |
-
-### Axes
-
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| **Affect X / Y / Z** | All on | Per-axis enable toggles. |
-
-### Advanced
-
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| **Center X / Y / Z** | `0` | The point each axis drifts toward (in normalized [-1, 1] space). Default 0 = center of range. Set Center X to 0.5 and tx will hang out in the upper half of your range. |
-| **Seed** | `0` | Random seed for reproducibility. 0 = unseeded (different every time). Any other value = deterministic — same seed always produces the same motion after Reset. |
-| **Independent** | On | When ON (default), each axis gets its own random noise — tx, ty, tz move independently in 3D. When OFF, all three axes share the same noise value each step, so they move together in lockstep (motion along the diagonal). Useful if you want correlated movement across channels. |
-| **Reset** | - | Pulse to snap all channels back to their center positions and re-seed the RNG. Fresh start. |
-
 ## Install
 
 1. **[Download the .tox](https://github.com/REMvisual/touchdesigner-brownian-motion/releases/latest)** from Releases
 2. Drag into your TouchDesigner project
 3. Wire the CHOP output to whatever needs motion
 
-## Architecture
+Outputs three channels: `tx`, `ty`, `tz`.
 
-Everything lives in one file: `src/brownian_motion.py` — the `BrownianMotion` class (pure Python, no TD deps) and the Script CHOP callbacks together. To assemble in TouchDesigner:
+## Parameters
 
-1. Create a Script CHOP
-2. Paste `src/brownian_motion.py` into its callbacks DAT
-3. Click "Setup Parameters" on the Script CHOP
+### Motion
 
-## Testing
+**Range Min / Range Max** `[-1, 1]`
+Output bounds. The normalized [-1, 1] motion gets mapped to this range. Default [-1, 1] means output matches the raw sim. Set to [0, 100] and your channels wander between 0 and 100.
 
-The math is validated by 20 headless pytest tests covering extreme speeds, ranges, edge cases, and numerical stability:
+**Speed** `1.0`
+How fast time passes for the simulation. Speed=1 is real-time. Speed=5 means the OU process evolves 5x faster — more ground covered per frame. Transitions are smoothed so dragging the slider doesn't cause jumps.
 
-```bash
-python -m pytest tests/test_brownian.py -v
-```
+**Amplitude** `1.0`
+Output multiplier. 0 = silence, 1 = full range. Useful for fading motion in and out.
+
+**Reversion** `2.0`
+How strongly the motion pulls back toward the center point (theta in the OU equation). High values = tight orbit around center, snaps back quickly. Low values = lazy wandering, barely cares about center. Zero = pure Brownian motion, no pull at all.
+
+**Roughness** `0.5`
+Controls the smoothing filter on the output. 0 = very smooth, flowing motion (spring with ~2s settling). 0.5 = moderate. 1 = raw unfiltered OU, no spring at all. Doesn't affect speed, just the texture of the motion.
+
+### Range
+
+**Per-Axis Range** `Off`
+Toggle to set different min/max per axis. When off, all axes share the same Range Min/Max. When on, each axis gets its own bounds — useful when X needs [-180, 180] degrees but Y only needs [-10, 10].
+
+**Range Min/Max X, Y, Z** `[-1, 1]`
+Per-axis output bounds. Only visible when Per-Axis Range is on.
+
+### Axes
+
+**Affect X / Y / Z** `All on`
+Per-axis enable toggles. Disabled axes output zero.
+
+### Advanced
+
+**Center X / Y / Z** `0`
+The point each axis drifts toward, in normalized [-1, 1] space. Default 0 = center of range. Set Center X to 0.5 and `tx` will hang out in the upper half of your range.
+
+**Seed** `0`
+Random seed for reproducibility. 0 = unseeded (different every time). Any other value = deterministic — same seed always produces the same motion after Reset.
+
+**Independent** `On`
+When ON (default), each axis gets its own random noise — `tx`, `ty`, `tz` move independently in 3D. When OFF, all three axes share the same noise value each step, so they move together in lockstep (motion along the diagonal). Useful if you want correlated movement across channels.
+
+**Reset** `Pulse`
+Snap all channels back to their center positions and re-seed the RNG. Fresh start.
 
 ## The Math
 
@@ -88,9 +82,7 @@ dx = theta * (mu - x) * dt  +  sigma * sqrt(dt) * N(0,1)
 
 Where `theta` is reversion strength, `mu` is center bias, and `sigma = 0.55 * sqrt(2*theta)` is tuned so the stationary distribution fills ~80% of the [-1,1] range.
 
-A critically-damped second-order spring filter smooths the raw OU signal. The spring's natural frequency scales with speed so smoothing keeps pace with faster motion.
-
-Sub-stepping (max 1/120s per step) ensures numerical stability at any speed.
+A **critically-damped second-order spring** filter smooths the raw OU signal. The spring's natural frequency scales with speed so smoothing keeps pace with faster motion. Sub-stepping (max 1/120s per step) ensures numerical stability at any speed.
 
 ## License
 
