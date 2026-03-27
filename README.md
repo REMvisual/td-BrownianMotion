@@ -20,6 +20,8 @@ Unlike random noise, Ornstein-Uhlenbeck motion always pulls back toward center â
 
 ## Install
 
+**Requires TouchDesigner 2025+** (uses `CookLevel.ALWAYS` and 2025.x absTime behavior).
+
 1. **[Download the .tox](https://github.com/REMvisual/touchdesigner-brownian-motion/releases/latest)** from Releases
 2. Drag into your TouchDesigner project
 3. Wire the CHOP output to whatever needs motion
