@@ -56,34 +56,34 @@
   <circle cx="1150" cy="275" r="4.5" fill="#c9a45c" opacity="0.22"/>
 
   <!-- Title -->
-  <text x="70" y="135" font-family="'DM Sans', sans-serif" font-size="82" font-weight="300" fill="#f2efe9" letter-spacing="-1">Brownian Motion</text>
+  <text x="70" y="140" font-family="'DM Sans', sans-serif" font-size="92" font-weight="300" fill="#f5f2ed" letter-spacing="-1">Brownian Motion</text>
 
   <!-- Subtitle -->
-  <text x="74" y="180" font-family="'Space Mono', monospace" font-size="18" fill="#c9a45c" letter-spacing="0.06em">ORNSTEIN-UHLENBECK SCRIPT CHOP</text>
+  <text x="76" y="190" font-family="'Space Mono', monospace" font-size="20" fill="#c9a45c" letter-spacing="0.06em">ORNSTEIN-UHLENBECK SCRIPT CHOP</text>
 
   <!-- Description -->
-  <text x="74" y="225" font-family="'DM Sans', sans-serif" font-size="20" fill="#a09889" font-weight="300">Smooth, mean-reverting procedural noise for TouchDesigner</text>
+  <text x="76" y="238" font-family="'DM Sans', sans-serif" font-size="22" fill="#b8ad9e" font-weight="300">Smooth, mean-reverting procedural noise for TouchDesigner</text>
 
   <!-- Badges -->
-  <g transform="translate(74, 250)">
-    <rect width="60" height="24" rx="4" fill="#c9a45c" opacity="0.15"/>
-    <text x="12" y="16" font-family="'Space Mono', monospace" font-size="12" fill="#c9a45c" letter-spacing="0.02em">v1.2</text>
+  <g transform="translate(76, 260)">
+    <rect width="64" height="26" rx="4" fill="#c9a45c" opacity="0.15"/>
+    <text x="14" y="17" font-family="'Space Mono', monospace" font-size="13" fill="#c9a45c" letter-spacing="0.02em">v1.2</text>
   </g>
-  <g transform="translate(144, 250)">
-    <rect width="110" height="24" rx="4" fill="#c9a45c" opacity="0.08"/>
-    <text x="12" y="16" font-family="'Space Mono', monospace" font-size="12" fill="#8a8078" letter-spacing="0.02em">TD 2025+</text>
+  <g transform="translate(150, 260)">
+    <rect width="116" height="26" rx="4" fill="#c9a45c" opacity="0.08"/>
+    <text x="14" y="17" font-family="'Space Mono', monospace" font-size="13" fill="#a0968a" letter-spacing="0.02em">TD 2025+</text>
   </g>
 
   <!-- Features -->
-  <g font-family="'Space Mono', monospace" font-size="13" fill="#6a6358" letter-spacing="0.04em">
-    <text x="74" y="342">SPRING-SMOOTHED</text>
-    <text x="280" y="342">PER-AXIS RANGE</text>
-    <text x="470" y="342">DETERMINISTIC</text>
-    <text x="650" y="342">HEADLESS-TESTED</text>
+  <g font-family="'Space Mono', monospace" font-size="14" fill="#b0a594" letter-spacing="0.04em">
+    <text x="76" y="345">SPRING-SMOOTHED</text>
+    <text x="290" y="345">PER-AXIS RANGE</text>
+    <text x="490" y="345">DETERMINISTIC</text>
+    <text x="670" y="345">HEADLESS-TESTED</text>
   </g>
-  <g fill="#c9a45c" opacity="0.35">
-    <circle cx="264" cy="339" r="2"/>
-    <circle cx="454" cy="339" r="2"/>
-    <circle cx="634" cy="339" r="2"/>
+  <g fill="#c9a45c" opacity="0.4">
+    <circle cx="274" cy="342" r="2"/>
+    <circle cx="474" cy="342" r="2"/>
+    <circle cx="654" cy="342" r="2"/>
   </g>
 </svg>
