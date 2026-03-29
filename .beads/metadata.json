@@ -1,7 +1,0 @@
-{
-  "database": "dolt",
-  "backend": "dolt",
-  "dolt_mode": "server",
-  "dolt_database": "touchdesigner_brownian_motion",
-  "project_id": "353395ce-8b8f-4a3f-af3f-9090af9a1b41"
-}
