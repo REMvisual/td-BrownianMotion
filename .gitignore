@@ -10,3 +10,5 @@ __pycache__/
 .beads/.beads-credential-key
 ov.conf
 .openviking/
+.claude/settings.local.json
+.claude/handoffs/
