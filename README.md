@@ -2,10 +2,12 @@
   <img src="assets/banner-1280x640.png" alt="Brownian Motion" width="100%">
 </p>
 
-<p align="center">
-  <a href="https://github.com/REMvisual/td-BrownianMotion/releases/latest"><img src="https://img.shields.io/github/v/release/REMvisual/td-BrownianMotion?style=for-the-badge&label=Download&color=blue" alt="Download Latest"></a>
-  <a href="https://github.com/REMvisual/td-BrownianMotion/releases"><img src="https://img.shields.io/github/downloads/REMvisual/td-BrownianMotion/total?style=for-the-badge" alt="Total Downloads"></a>
-</p>
+
+[![Download Latest](https://img.shields.io/github/v/release/REMvisual/claude-handoff?style=for-the-badge&label=Download&color=blue)](https://github.com/REMvisual/claude-handoff/releases/latest)
+[![Total Downloads](https://img.shields.io/github/downloads/REMvisual/claude-handoff/total?style=for-the-badge)](https://github.com/REMvisual/claude-handoff/releases)
+![Views](https://komarev.com/ghpvc/?username=REMvisual-handoff&label=Views&color=brightgreen&style=for-the-badge)
+
+
 
 Ornstein-Uhlenbeck brownian motion for TouchDesigner. A Script CHOP that generates smooth, mean-reverting procedural noise — perfect for organic camera drift, floating objects, generative motion, and anything that needs to feel alive.
 
