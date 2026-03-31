@@ -257,6 +257,16 @@ def onSetupParameters(scriptOp):
     scriptOp.par.Rangeminz.default = -1.0
     scriptOp.par.Rangemaxz.default = 1.0
 
+    # Enable expressions — controls visibility based on Peraxisrange toggle
+    scriptOp.par.Rangemin.enableExpr = 'not me.par.Peraxisrange'
+    scriptOp.par.Rangemax.enableExpr = 'not me.par.Peraxisrange'
+    scriptOp.par.Rangeminx.enableExpr = 'me.par.Peraxisrange and me.par.Affectx'
+    scriptOp.par.Rangemaxx.enableExpr = 'me.par.Peraxisrange and me.par.Affectx'
+    scriptOp.par.Rangeminy.enableExpr = 'me.par.Peraxisrange and me.par.Affecty'
+    scriptOp.par.Rangemaxy.enableExpr = 'me.par.Peraxisrange and me.par.Affecty'
+    scriptOp.par.Rangeminz.enableExpr = 'me.par.Peraxisrange and me.par.Affectz'
+    scriptOp.par.Rangemaxz.enableExpr = 'me.par.Peraxisrange and me.par.Affectz'
+
     # ── Axes ──
     page3 = scriptOp.appendCustomPage('Axes')
     page3.appendToggle('Affectx', label='Affect X')
@@ -332,20 +342,6 @@ def onCook(scriptOp):
     )
     independent = bool(scriptOp.par.Independentaxes.eval())
     per_axis = bool(scriptOp.par.Peraxisrange.eval())
-
-    # Toggle range param enable based on per-axis toggle + axis enables
-    affect_x = bool(scriptOp.par.Affectx.eval())
-    affect_y = bool(scriptOp.par.Affecty.eval())
-    affect_z = bool(scriptOp.par.Affectz.eval())
-
-    scriptOp.par.Rangemin.enable = not per_axis
-    scriptOp.par.Rangemax.enable = not per_axis
-    scriptOp.par.Rangeminx.enable = per_axis and affect_x
-    scriptOp.par.Rangemaxx.enable = per_axis and affect_x
-    scriptOp.par.Rangeminy.enable = per_axis and affect_y
-    scriptOp.par.Rangemaxy.enable = per_axis and affect_y
-    scriptOp.par.Rangeminz.enable = per_axis and affect_z
-    scriptOp.par.Rangemaxz.enable = per_axis and affect_z
 
     # Step the simulation
     bm.step(dt, speed=speed, center_pull=center_pull, smoothing=smoothing,
