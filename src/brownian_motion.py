@@ -42,6 +42,10 @@ class BrownianMotion:
         self._has_spare = False
         self._spare = 0.0
 
+        # Voss-McCartney detail layers: [axis][layer] = OU state
+        self._detail_states = [[0.0] * 5 for _ in range(3)]  # max 5 layers, 3 axes
+        self._detail_counters = [[0] * 5 for _ in range(3)]
+
     def reset(self, anchor=None):
         """Reset all state to anchor position."""
         if anchor is not None:
@@ -52,6 +56,8 @@ class BrownianMotion:
         self.smoothed_speed = 1.0
         self._has_spare = False
         self._spare = 0.0
+        self._detail_states = [[0.0] * 5 for _ in range(3)]
+        self._detail_counters = [[0] * 5 for _ in range(3)]
 
     def _box_muller(self):
         """Box-Muller transform — returns one Gaussian sample N(0,1)."""
@@ -72,7 +78,8 @@ class BrownianMotion:
         return mag * math.cos(angle)
 
     def step(self, dt, speed=1.0, center_pull=2.0, smoothing=0.5,
-             anchor=(0.0, 0.0, 0.0), independent_axes=True):
+             anchor=(0.0, 0.0, 0.0), independent_axes=True,
+             detail=0.0, detail_layers=3):
         """
         Advance the simulation by dt seconds.
 
@@ -147,6 +154,35 @@ class BrownianMotion:
                 n2 = 1.0 + omega * dt
                 self.spring_vel[ax] = n1 / (n2 * n2)
                 self.smoothed_state[ax] += self.spring_vel[ax] * dt
+
+        # ── Voss-McCartney 1/f detail layer ──
+        if detail > 0.0:
+            layer_theta = 4.0  # nervous detail character
+            layer_sigma = 0.55 * math.sqrt(2.0 * layer_theta)
+
+            for ax in range(3):
+                layer_sum = 0.0
+                amp = 0.5
+                for layer in range(min(detail_layers, 5)):
+                    self._detail_counters[ax][layer] += 1
+                    update_interval = 1 << layer  # 1, 2, 4, 8, 16
+                    if self._detail_counters[ax][layer] >= update_interval:
+                        self._detail_counters[ax][layer] = 0
+                        # Exact OU step for this layer
+                        accumulated_dt = sim_dt * update_interval
+                        if accumulated_dt > 0.0:
+                            d_decay = math.exp(-layer_theta * accumulated_dt)
+                            d_std = layer_sigma * math.sqrt(
+                                (1.0 - math.exp(-2.0 * layer_theta * accumulated_dt))
+                                / (2.0 * layer_theta))
+                            self._detail_states[ax][layer] = (
+                                self._detail_states[ax][layer] * d_decay
+                                + d_std * self._box_muller())
+                            self._detail_states[ax][layer] = max(-1.0, min(1.0,
+                                self._detail_states[ax][layer]))
+                    layer_sum += amp * self._detail_states[ax][layer]
+                    amp *= 0.5
+                self.smoothed_state[ax] += layer_sum * detail * 0.3
 
         # Safety clamp
         for ax in range(3):
@@ -236,6 +272,21 @@ def onSetupParameters(scriptOp):
     scriptOp.par.Smoothing.max = 1.0
     scriptOp.par.Smoothing.clampMin = True
     scriptOp.par.Smoothing.clampMax = True
+
+    page.appendFloat('Detail', label='Detail')
+    page.appendInt('Detaillayers', label='Detail Layers')
+
+    scriptOp.par.Detail.default = 0.0
+    scriptOp.par.Detail.min = 0.0
+    scriptOp.par.Detail.max = 1.0
+    scriptOp.par.Detail.clampMin = True
+    scriptOp.par.Detail.clampMax = True
+
+    scriptOp.par.Detaillayers.default = 3
+    scriptOp.par.Detaillayers.min = 1
+    scriptOp.par.Detaillayers.max = 5
+    scriptOp.par.Detaillayers.clampMin = True
+    scriptOp.par.Detaillayers.clampMax = True
 
     # ── Range ──
     page2 = scriptOp.appendCustomPage('Range')
@@ -344,10 +395,13 @@ def onCook(scriptOp):
     )
     independent = bool(scriptOp.par.Independentaxes.eval())
     per_axis = bool(scriptOp.par.Peraxisrange.eval())
+    detail = scriptOp.par.Detail.eval()
+    detail_layers = int(scriptOp.par.Detaillayers.eval())
 
     # Step the simulation
     bm.step(dt, speed=speed, center_pull=center_pull, smoothing=smoothing,
-            anchor=anchor, independent_axes=independent)
+            anchor=anchor, independent_axes=independent,
+            detail=detail, detail_layers=detail_layers)
 
     # Map to output
     if per_axis:

@@ -446,3 +446,19 @@ def test_exact_ou_stationary_distribution():
     # Stationary std should be ~0.55 regardless of theta
     assert abs(std - 0.55) < 0.1, f"Std {std} not near 0.55"
     assert abs(mean) < 0.15, f"Mean {mean} not near 0"
+
+
+# ---------------------------------------------------------------------------
+# 23. Fractal Detail — adds high-frequency micro-motion
+# ---------------------------------------------------------------------------
+def test_fractal_detail():
+    bm_no = BrownianMotion(seed=42)
+    bm_yes = BrownianMotion(seed=42)
+    for _ in range(200):
+        bm_no.step(DT, center_pull=2.0, smoothing=0.5, detail=0.0)
+        bm_yes.step(DT, center_pull=2.0, smoothing=0.5, detail=0.5, detail_layers=3)
+    # With detail, output should differ from without
+    assert bm_no.smoothed_state != bm_yes.smoothed_state
+    # Both should stay in range
+    for ax in range(3):
+        assert -1.0 <= bm_yes.smoothed_state[ax] <= 1.0
