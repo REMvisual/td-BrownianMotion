@@ -19,16 +19,20 @@ class BrownianMotion:
     map_offset() projects to world-space output with range/amplitude.
     """
 
-    def __init__(self, seed=0):
+    def __init__(self, seed=0, initial_anchor=(0.0, 0.0, 0.0)):
         """
         Args:
             seed: Random seed. 0 = non-deterministic (time-based).
+            initial_anchor: Starting position for OU state (eliminates cold-start drift).
         """
         self._rng = random.Random(seed if seed != 0 else None)
 
-        # OU state in [-1, 1] normalised space
-        self.ou_state = [0.0, 0.0, 0.0]
-        self.smoothed_state = [0.0, 0.0, 0.0]
+        # Store anchor for reset
+        self._anchor = list(initial_anchor)
+
+        # OU state in [-1, 1] normalised space — init at anchor
+        self.ou_state = list(initial_anchor)
+        self.smoothed_state = list(initial_anchor)
         self.spring_vel = [0.0, 0.0, 0.0]
 
         # Speed smoother
@@ -38,10 +42,12 @@ class BrownianMotion:
         self._has_spare = False
         self._spare = 0.0
 
-    def reset(self):
-        """Zero all state."""
-        self.ou_state = [0.0, 0.0, 0.0]
-        self.smoothed_state = [0.0, 0.0, 0.0]
+    def reset(self, anchor=None):
+        """Reset all state to anchor position."""
+        if anchor is not None:
+            self._anchor = list(anchor)
+        self.ou_state = list(self._anchor)
+        self.smoothed_state = list(self._anchor)
         self.spring_vel = [0.0, 0.0, 0.0]
         self.smoothed_speed = 1.0
         self._has_spare = False
@@ -80,6 +86,9 @@ class BrownianMotion:
         """
         # Smoothing is user-facing (1=smooth, 0=raw). Internally we use roughness (0=smooth, 1=raw).
         roughness = 1.0 - smoothing
+
+        # Store anchor for reset
+        self._anchor = list(anchor)
 
         # Smooth speed changes (~0.3s settling)
         self.smoothed_speed += (speed - self.smoothed_speed) * (1.0 - math.exp(-dt * 3.0))

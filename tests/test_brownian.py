@@ -413,6 +413,19 @@ def test_reset():
     assert any(v != 0.0 for v in bm.smoothed_state), "Should have moved"
 
     bm.reset()
+    # After reset, state should be at anchor (default 0,0,0)
     assert bm.ou_state == [0.0, 0.0, 0.0]
     assert bm.smoothed_state == [0.0, 0.0, 0.0]
     assert bm.spring_vel == [0.0, 0.0, 0.0]
+
+
+# ---------------------------------------------------------------------------
+# 21. Reset at Anchor — resets to last-used anchor position
+# ---------------------------------------------------------------------------
+def test_reset_at_anchor():
+    bm = BrownianMotion(seed=42)
+    for _ in range(100):
+        bm.step(DT, center_pull=2.0, smoothing=0.5, anchor=(0.5, -0.3, 0.7))
+    bm.reset()
+    assert bm.ou_state == [0.5, -0.3, 0.7]
+    assert bm.smoothed_state == [0.5, -0.3, 0.7]
