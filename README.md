@@ -50,7 +50,7 @@ Output multiplier. 0 = silence, 1 = full range. Useful for fading motion in and 
 How strongly the motion pulls back toward the anchor point (theta in the OU equation). High values = tight orbit around anchor, snaps back quickly. Low values = lazy wandering, barely cares about anchor. Zero = pure Brownian motion, no pull at all.
 
 **Smoothing** `0.5`
-Controls the smoothing filter on the output. 1 = very smooth, flowing motion (spring with ~2s settling). 0.5 = moderate. 0 = raw unfiltered OU, no spring at all. Doesn't affect speed, just the texture of the motion.
+Controls the smoothing filter on the output. 1 = very smooth, flowing motion (~2s settling). 0.5 = moderate. 0 = minimal filtering. Always applies at least a light spring — never fully raw. Changes texture, not speed.
 
 **Detail** `0.0`
 Adds high-frequency micro-motion using Voss-McCartney 1/f pink noise. 0 = off (zero cost). Higher values add more organic detail on top of the base motion.
@@ -74,8 +74,8 @@ Master toggle for rotation noise output.
 **Rotation Speed** `1.0`
 Independent speed multiplier for rotation. Separate from position speed.
 
-**Pitch / Yaw / Roll** `0.0`
-Per-axis rotation amplitude in degrees. Set to 0 to disable that axis. For example, Pitch=10 means rx wanders up to 10 degrees.
+**Pitch / Yaw / Roll** `5 / 5 / 0`
+Per-axis rotation amplitude in degrees. Set to 0 to disable that axis. Default: 5 degrees pitch and yaw, 0 roll. Shares Center Pull and Smoothing with position.
 
 ### Axes
 
