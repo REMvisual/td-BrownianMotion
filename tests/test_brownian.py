@@ -303,18 +303,34 @@ def test_smoothing_high():
 
 
 # ---------------------------------------------------------------------------
-# 15. Smoothing Zero — smoothing=0 bypasses spring, smoothed == OU
+# 15. Smoothing Zero — smoothing=0 is rougher than smoothing=1
 # ---------------------------------------------------------------------------
 def test_smoothing_zero():
-    bm = BrownianMotion(seed=300)
+    """Smoothing=0 produces more frame-to-frame variation than smoothing=1."""
+    # Low smoothing = more jitter
+    bm_raw = BrownianMotion(seed=300)
+    deltas_raw = []
+    prev = 0.0
     for _ in range(500):
-        bm.step(DT, speed=1.0, center_pull=2.0, smoothing=0.0)
+        bm_raw.step(DT, speed=1.0, center_pull=2.0, smoothing=0.0)
+        deltas_raw.append(abs(bm_raw.smoothed_state[0] - prev))
+        prev = bm_raw.smoothed_state[0]
 
-    for ax in range(3):
-        assert bm.smoothed_state[ax] == bm.ou_state[ax], (
-            f"Axis {ax}: smoothed {bm.smoothed_state[ax]} != ou {bm.ou_state[ax]} "
-            f"with smoothing=0"
-        )
+    # High smoothing = less jitter
+    bm_smooth = BrownianMotion(seed=300)
+    deltas_smooth = []
+    prev = 0.0
+    for _ in range(500):
+        bm_smooth.step(DT, speed=1.0, center_pull=2.0, smoothing=1.0)
+        deltas_smooth.append(abs(bm_smooth.smoothed_state[0] - prev))
+        prev = bm_smooth.smoothed_state[0]
+
+    avg_raw = sum(deltas_raw) / len(deltas_raw)
+    avg_smooth = sum(deltas_smooth) / len(deltas_smooth)
+    assert avg_raw > avg_smooth * 2, (
+        f"Smoothing=0 (avg delta {avg_raw:.4f}) should be much rougher than "
+        f"smoothing=1 (avg delta {avg_smooth:.4f})"
+    )
 
 
 # ---------------------------------------------------------------------------

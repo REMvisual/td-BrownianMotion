@@ -153,24 +153,23 @@ class BrownianMotion:
             self.ou_state[ax] = max(-1.0, min(1.0, self.ou_state[ax]))
 
         # ── Spring filter (real frame time, implicit integration) ──
-        # Unconditionally stable — no substeps needed regardless of dt or omega.
-        bypass_spring = (roughness >= 1.0)
+        # Always apply at least minimal smoothing — raw OU is too jittery.
+        # Roughness capped at 0.95 so the spring is never fully bypassed.
+        roughness = min(roughness, 0.95)
 
-        if bypass_spring:
-            self.smoothed_state = list(self.ou_state)
-            self.spring_vel = [0.0, 0.0, 0.0]
-        else:
-            spring_speed = math.sqrt(max(self.smoothed_speed, 1.0))
-            omega = 2.0 * math.exp(roughness * 3.2) * spring_speed
+        spring_speed = math.sqrt(max(self.smoothed_speed, 1.0))
+        omega = 2.0 * math.exp(roughness * 3.2) * spring_speed
 
-            # Implicit spring (Klak-style, unconditionally stable)
-            for ax in range(3):
-                n1 = self.spring_vel[ax] - (self.smoothed_state[ax] - self.ou_state[ax]) * (omega * omega * dt)
-                n2 = 1.0 + omega * dt
-                self.spring_vel[ax] = n1 / (n2 * n2)
-                self.smoothed_state[ax] += self.spring_vel[ax] * dt
+        # Implicit spring (Klak-style, unconditionally stable)
+        for ax in range(3):
+            n1 = self.spring_vel[ax] - (self.smoothed_state[ax] - self.ou_state[ax]) * (omega * omega * dt)
+            n2 = 1.0 + omega * dt
+            self.spring_vel[ax] = n1 / (n2 * n2)
+            self.smoothed_state[ax] += self.spring_vel[ax] * dt
 
         # ── Voss-McCartney 1/f detail layer ──
+        # Detail runs on real dt (not sim_dt) so it adds consistent texture
+        # regardless of speed — it shouldn't make motion appear faster.
         if detail > 0.0:
             layer_theta = 4.0  # nervous detail character
             layer_sigma = 0.55 * math.sqrt(2.0 * layer_theta)
@@ -183,8 +182,8 @@ class BrownianMotion:
                     update_interval = 1 << layer  # 1, 2, 4, 8, 16
                     if self._detail_counters[ax][layer] >= update_interval:
                         self._detail_counters[ax][layer] = 0
-                        # Exact OU step for this layer
-                        accumulated_dt = sim_dt * update_interval
+                        # Real dt * interval — detail is speed-independent
+                        accumulated_dt = dt * update_interval
                         if accumulated_dt > 0.0:
                             d_decay = math.exp(-layer_theta * accumulated_dt)
                             d_std = layer_sigma * math.sqrt(
@@ -197,7 +196,7 @@ class BrownianMotion:
                                 self._detail_states[ax][layer]))
                     layer_sum += amp * self._detail_states[ax][layer]
                     amp *= 0.5
-                self.smoothed_state[ax] += layer_sum * detail * 0.3
+                self.smoothed_state[ax] += layer_sum * detail * 0.15
 
         # Safety clamp
         for ax in range(3):
@@ -254,20 +253,16 @@ class BrownianMotion:
         for ax in range(3):
             self.rot_ou_state[ax] = max(-1.0, min(1.0, self.rot_ou_state[ax]))
 
-        # Implicit spring
-        bypass_spring = (roughness >= 1.0)
-        if bypass_spring:
-            self.rot_smoothed_state = list(self.rot_ou_state)
-            self.rot_spring_vel = [0.0, 0.0, 0.0]
-        else:
-            spring_speed = math.sqrt(max(self.rot_smoothed_speed, 1.0))
-            omega = 2.0 * math.exp(roughness * 3.2) * spring_speed
-            for ax in range(3):
-                n1 = self.rot_spring_vel[ax] - (
-                    self.rot_smoothed_state[ax] - self.rot_ou_state[ax]) * (omega * omega * dt)
-                n2 = 1.0 + omega * dt
-                self.rot_spring_vel[ax] = n1 / (n2 * n2)
-                self.rot_smoothed_state[ax] += self.rot_spring_vel[ax] * dt
+        # Implicit spring (always applied — roughness capped at 0.95)
+        roughness = min(roughness, 0.95)
+        spring_speed = math.sqrt(max(self.rot_smoothed_speed, 1.0))
+        omega = 2.0 * math.exp(roughness * 3.2) * spring_speed
+        for ax in range(3):
+            n1 = self.rot_spring_vel[ax] - (
+                self.rot_smoothed_state[ax] - self.rot_ou_state[ax]) * (omega * omega * dt)
+            n2 = 1.0 + omega * dt
+            self.rot_spring_vel[ax] = n1 / (n2 * n2)
+            self.rot_smoothed_state[ax] += self.rot_spring_vel[ax] * dt
 
         # Voss-McCartney detail for rotation
         if detail > 0.0:
@@ -282,7 +277,7 @@ class BrownianMotion:
                     update_interval = 1 << layer
                     if self._rot_detail_counters[ax][layer] >= update_interval:
                         self._rot_detail_counters[ax][layer] = 0
-                        accumulated_dt = sim_dt * update_interval
+                        accumulated_dt = dt * update_interval  # real dt, speed-independent
                         if accumulated_dt > 0.0:
                             d_decay = math.exp(-layer_theta * accumulated_dt)
                             d_std = layer_sigma * math.sqrt(
@@ -295,7 +290,7 @@ class BrownianMotion:
                                 self._rot_detail_states[ax][layer]))
                     layer_sum += amp * self._rot_detail_states[ax][layer]
                     amp *= 0.5
-                self.rot_smoothed_state[ax] += layer_sum * detail * 0.3
+                self.rot_smoothed_state[ax] += layer_sum * detail * 0.15
 
         for ax in range(3):
             self.rot_smoothed_state[ax] = max(-1.0, min(1.0, self.rot_smoothed_state[ax]))
@@ -452,13 +447,13 @@ def onSetupParameters(scriptOp):
     scriptOp.par.Rotationspeed.clampMin = True
     scriptOp.par.Rotationspeed.clampMax = False
 
-    scriptOp.par.Rotationpitch.default = 0.0
+    scriptOp.par.Rotationpitch.default = 5.0
     scriptOp.par.Rotationpitch.min = -180.0
     scriptOp.par.Rotationpitch.max = 180.0
     scriptOp.par.Rotationpitch.clampMin = False
     scriptOp.par.Rotationpitch.clampMax = False
 
-    scriptOp.par.Rotationyaw.default = 0.0
+    scriptOp.par.Rotationyaw.default = 5.0
     scriptOp.par.Rotationyaw.min = -180.0
     scriptOp.par.Rotationyaw.max = 180.0
     scriptOp.par.Rotationyaw.clampMin = False
@@ -469,6 +464,12 @@ def onSetupParameters(scriptOp):
     scriptOp.par.Rotationroll.max = 180.0
     scriptOp.par.Rotationroll.clampMin = False
     scriptOp.par.Rotationroll.clampMax = False
+
+    # Enable rotation params only when toggle is on
+    scriptOp.par.Rotationspeed.enableExpr = 'me.par.Enablerotation'
+    scriptOp.par.Rotationpitch.enableExpr = 'me.par.Enablerotation'
+    scriptOp.par.Rotationyaw.enableExpr = 'me.par.Enablerotation'
+    scriptOp.par.Rotationroll.enableExpr = 'me.par.Enablerotation'
 
     # ── Axes ──
     page3 = scriptOp.appendCustomPage('Axes')
