@@ -1,0 +1,21 @@
+# Dev files — public repo is release artifacts only
+src/
+tests/
+__pycache__/
+*.pyc
+.pytest_cache/
+assets/*.svg
+assets/*.html
+assets/*.py
+assets/logo-*
+
+# Project tooling
+.dolt/
+*.db
+.beads/
+.beads/.beads-credential-key
+.claude/
+CLAUDE.md
+AGENTS.md
+ov.conf
+.openviking/
