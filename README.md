@@ -4,7 +4,6 @@
 
 
 [![Download Latest](https://img.shields.io/github/v/release/REMvisual/claude-handoff?style=for-the-badge&label=Download&color=blue)](https://github.com/REMvisual/claude-handoff/releases/latest)
-[![Total Downloads](https://img.shields.io/github/downloads/REMvisual/claude-handoff/total?style=for-the-badge)](https://github.com/REMvisual/claude-handoff/releases)
 ![Views](https://komarev.com/ghpvc/?username=REMvisual-handoff&label=Views&color=brightgreen&style=for-the-badge)
 
 
