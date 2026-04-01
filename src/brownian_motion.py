@@ -152,26 +152,11 @@ class BrownianMotion:
         for ax in range(3):
             self.ou_state[ax] = max(-1.0, min(1.0, self.ou_state[ax]))
 
-        # ── Spring filter (real frame time, implicit integration) ──
-        # Always apply at least minimal smoothing — raw OU is too jittery.
-        # Roughness capped at 0.95 so the spring is never fully bypassed.
-        roughness = min(roughness, 0.95)
-
-        spring_speed = math.sqrt(max(self.smoothed_speed, 1.0))
-        omega = 2.0 * math.exp(roughness * 3.2) * spring_speed
-
-        # Implicit spring (Klak-style, unconditionally stable)
-        for ax in range(3):
-            n1 = self.spring_vel[ax] - (self.smoothed_state[ax] - self.ou_state[ax]) * (omega * omega * dt)
-            n2 = 1.0 + omega * dt
-            self.spring_vel[ax] = n1 / (n2 * n2)
-            self.smoothed_state[ax] += self.spring_vel[ax] * dt
-
         # ── Voss-McCartney 1/f detail layer ──
-        # Detail runs on real dt (not sim_dt) so it adds consistent texture
-        # regardless of speed — it shouldn't make motion appear faster.
-        if detail > 0.0:
-            layer_theta = 4.0  # nervous detail character
+        # Applied BEFORE the spring so that smoothing filters detail naturally.
+        # Uses sim_dt so detail freezes when speed=0.
+        if detail > 0.0 and sim_dt > 0.0:
+            layer_theta = 4.0
             layer_sigma = 0.55 * math.sqrt(2.0 * layer_theta)
 
             for ax in range(3):
@@ -179,10 +164,9 @@ class BrownianMotion:
                 amp = 0.5
                 for layer in range(min(detail_layers, 5)):
                     self._detail_counters[ax][layer] += 1
-                    update_interval = 1 << layer  # 1, 2, 4, 8, 16
+                    update_interval = 1 << layer
                     if self._detail_counters[ax][layer] >= update_interval:
                         self._detail_counters[ax][layer] = 0
-                        # Real dt * interval — detail is speed-independent
                         accumulated_dt = dt * update_interval
                         if accumulated_dt > 0.0:
                             d_decay = math.exp(-layer_theta * accumulated_dt)
@@ -196,7 +180,25 @@ class BrownianMotion:
                                 self._detail_states[ax][layer]))
                     layer_sum += amp * self._detail_states[ax][layer]
                     amp *= 0.5
-                self.smoothed_state[ax] += layer_sum * detail * 0.15
+                # Add detail to OU state so the spring filters it
+                self.ou_state[ax] = max(-1.0, min(1.0,
+                    self.ou_state[ax] + layer_sum * detail * 0.15))
+
+        # ── Spring filter (real frame time, implicit integration) ──
+        # Narrowed omega range: exponent 2.0 (was 3.2), roughness capped at 0.85.
+        # This keeps smoothing from drastically changing perceived speed.
+        # omega range: 2 (smooth) to ~11 (rough) — 5.5x ratio vs old 21x.
+        roughness = min(roughness, 0.85)
+
+        spring_speed = math.sqrt(max(self.smoothed_speed, 1.0))
+        omega = 2.0 * math.exp(roughness * 2.0) * spring_speed
+
+        # Implicit spring (Klak-style, unconditionally stable)
+        for ax in range(3):
+            n1 = self.spring_vel[ax] - (self.smoothed_state[ax] - self.ou_state[ax]) * (omega * omega * dt)
+            n2 = 1.0 + omega * dt
+            self.spring_vel[ax] = n1 / (n2 * n2)
+            self.smoothed_state[ax] += self.spring_vel[ax] * dt
 
         # Safety clamp
         for ax in range(3):
@@ -253,22 +255,10 @@ class BrownianMotion:
         for ax in range(3):
             self.rot_ou_state[ax] = max(-1.0, min(1.0, self.rot_ou_state[ax]))
 
-        # Implicit spring (always applied — roughness capped at 0.95)
-        roughness = min(roughness, 0.95)
-        spring_speed = math.sqrt(max(self.rot_smoothed_speed, 1.0))
-        omega = 2.0 * math.exp(roughness * 3.2) * spring_speed
-        for ax in range(3):
-            n1 = self.rot_spring_vel[ax] - (
-                self.rot_smoothed_state[ax] - self.rot_ou_state[ax]) * (omega * omega * dt)
-            n2 = 1.0 + omega * dt
-            self.rot_spring_vel[ax] = n1 / (n2 * n2)
-            self.rot_smoothed_state[ax] += self.rot_spring_vel[ax] * dt
-
-        # Voss-McCartney detail for rotation
-        if detail > 0.0:
+        # Detail BEFORE spring (so smoothing filters it)
+        if detail > 0.0 and sim_dt > 0.0:
             layer_theta = 4.0
             layer_sigma = 0.55 * math.sqrt(2.0 * layer_theta)
-
             for ax in range(3):
                 layer_sum = 0.0
                 amp = 0.5
@@ -277,7 +267,7 @@ class BrownianMotion:
                     update_interval = 1 << layer
                     if self._rot_detail_counters[ax][layer] >= update_interval:
                         self._rot_detail_counters[ax][layer] = 0
-                        accumulated_dt = dt * update_interval  # real dt, speed-independent
+                        accumulated_dt = dt * update_interval
                         if accumulated_dt > 0.0:
                             d_decay = math.exp(-layer_theta * accumulated_dt)
                             d_std = layer_sigma * math.sqrt(
@@ -290,7 +280,19 @@ class BrownianMotion:
                                 self._rot_detail_states[ax][layer]))
                     layer_sum += amp * self._rot_detail_states[ax][layer]
                     amp *= 0.5
-                self.rot_smoothed_state[ax] += layer_sum * detail * 0.15
+                self.rot_ou_state[ax] = max(-1.0, min(1.0,
+                    self.rot_ou_state[ax] + layer_sum * detail * 0.15))
+
+        # Spring (narrowed omega range, roughness capped at 0.85)
+        roughness = min(roughness, 0.85)
+        spring_speed = math.sqrt(max(self.rot_smoothed_speed, 1.0))
+        omega = 2.0 * math.exp(roughness * 2.0) * spring_speed
+        for ax in range(3):
+            n1 = self.rot_spring_vel[ax] - (
+                self.rot_smoothed_state[ax] - self.rot_ou_state[ax]) * (omega * omega * dt)
+            n2 = 1.0 + omega * dt
+            self.rot_spring_vel[ax] = n1 / (n2 * n2)
+            self.rot_smoothed_state[ax] += self.rot_spring_vel[ax] * dt
 
         for ax in range(3):
             self.rot_smoothed_state[ax] = max(-1.0, min(1.0, self.rot_smoothed_state[ax]))
